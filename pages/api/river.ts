@@ -1,4 +1,9 @@
-export default async function handler(req, res) {
+import type { NextApiRequest, NextApiResponse } from "next";
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
     const response = await fetch("https://environment.data.gov.uk/flood-monitoring/id/stations/6169", {
       headers: {
