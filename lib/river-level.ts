@@ -98,11 +98,15 @@ function formatReadingTime(dateTime?: string) {
 export async function getRiverLevelData(): Promise<RiverLevelData> {
   try {
     const response = await fetch(RIVER_LEVEL_URL, {
-      next: { revalidate: 300 }
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0"
+      }
     });
 
     if (!response.ok) {
-      console.error("Failed to fetch river level data", response.status, response.statusText);
+      console.error("Failed to fetch river level data", response.status);
       return {
         level: "No data available",
         timestamp: "No recent reading",
@@ -111,7 +115,20 @@ export async function getRiverLevelData(): Promise<RiverLevelData> {
       };
     }
 
-    const payload = (await response.json()) as EnvironmentAgencyResponse;
+    let payload: EnvironmentAgencyResponse;
+
+    try {
+      payload = (await response.json()) as EnvironmentAgencyResponse;
+    } catch (error) {
+      console.error("Failed to parse river level data", error);
+      return {
+        level: "No data available",
+        timestamp: "No recent reading",
+        trend: "Unknown",
+        state: "Unknown"
+      };
+    }
+
     const levelMeasure = payload.items?.measures?.find((measure) => measure.parameter === "level");
     const latestReading = levelMeasure?.latestReading;
 
