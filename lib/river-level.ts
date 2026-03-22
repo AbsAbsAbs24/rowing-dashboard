@@ -1,17 +1,27 @@
 export type RiverLevelData = {
   level: string;
   timestamp: string;
+  trend: string;
+  state: string;
 };
 
 type EnvironmentAgencyResponse = {
-  items?: Array<{
-    value?: number;
-    dateTime?: string;
-  }>;
+  items?: {
+    measures?: Array<{
+      parameter?: string;
+      latestReading?: {
+        value?: number;
+        dateTime?: string;
+        trend?: string;
+      };
+      trend?: string;
+      typicalRangeHigh?: number;
+      typicalRangeLow?: number;
+    }>;
+  };
 };
 
-const RIVER_LEVEL_URL =
-  "https://environment.data.gov.uk/flood-monitoring/id/stations/6169/readings?_sorted&limit=1";
+const RIVER_LEVEL_URL = "https://environment.data.gov.uk/flood-monitoring/id/stations/6169";
 
 function formatRiverLevel(value?: number) {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -19,6 +29,53 @@ function formatRiverLevel(value?: number) {
   }
 
   return `${value.toFixed(2)} m`;
+}
+
+function formatTrend(trend?: string) {
+  if (!trend) {
+    return "Unknown";
+  }
+
+  const normalizedTrend = trend.trim().toLowerCase();
+
+  if (normalizedTrend.includes("rise")) {
+    return "Rising";
+  }
+
+  if (normalizedTrend.includes("fall")) {
+    return "Falling";
+  }
+
+  if (normalizedTrend.includes("steady")) {
+    return "Steady";
+  }
+
+  return "Unknown";
+}
+
+function getState(value?: number, typicalRangeLow?: number, typicalRangeHigh?: number) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "Unknown";
+  }
+
+  if (typeof typicalRangeLow === "number" && !Number.isNaN(typicalRangeLow) && value < typicalRangeLow) {
+    return "Low";
+  }
+
+  if (typeof typicalRangeHigh === "number" && !Number.isNaN(typicalRangeHigh) && value > typicalRangeHigh) {
+    return "High";
+  }
+
+  if (
+    typeof typicalRangeLow === "number" &&
+    !Number.isNaN(typicalRangeLow) &&
+    typeof typicalRangeHigh === "number" &&
+    !Number.isNaN(typicalRangeHigh)
+  ) {
+    return "Normal";
+  }
+
+  return "Unknown";
 }
 
 function formatReadingTime(dateTime?: string) {
@@ -48,22 +105,29 @@ export async function getRiverLevelData(): Promise<RiverLevelData> {
       console.error("Failed to fetch river level data", response.status, response.statusText);
       return {
         level: "No data available",
-        timestamp: "No recent reading"
+        timestamp: "No recent reading",
+        trend: "Unknown",
+        state: "Unknown"
       };
     }
 
     const payload = (await response.json()) as EnvironmentAgencyResponse;
-    const latestReading = payload.items?.[0];
+    const levelMeasure = payload.items?.measures?.find((measure) => measure.parameter === "level");
+    const latestReading = levelMeasure?.latestReading;
 
     return {
       level: formatRiverLevel(latestReading?.value),
-      timestamp: formatReadingTime(latestReading?.dateTime)
+      timestamp: formatReadingTime(latestReading?.dateTime),
+      trend: formatTrend(latestReading?.trend ?? levelMeasure?.trend),
+      state: getState(latestReading?.value, levelMeasure?.typicalRangeLow, levelMeasure?.typicalRangeHigh)
     };
   } catch (error) {
     console.error("Failed to load river level data", error);
     return {
       level: "No data available",
-      timestamp: "No recent reading"
+      timestamp: "No recent reading",
+      trend: "Unknown",
+      state: "Unknown"
     };
   }
 }
