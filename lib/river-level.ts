@@ -4,24 +4,21 @@ export type RiverLevelData = {
 };
 
 type EnvironmentAgencyResponse = {
-  items?: {
-    measures?: Array<{
-      latestReading?: {
-        value?: number;
-        dateTime?: string;
-      };
-    }>;
-  };
+  items?: Array<{
+    value?: number;
+    dateTime?: string;
+  }>;
 };
 
-const RIVER_LEVEL_URL = "https://environment.data.gov.uk/flood-monitoring/id/stations/6169";
+const RIVER_LEVEL_URL =
+  "https://environment.data.gov.uk/flood-monitoring/id/stations/6169/readings?_sorted&limit=1";
 
 function formatRiverLevel(value?: number) {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "No data available";
   }
 
-  return `${value.toFixed(2)}m`;
+  return `${value.toFixed(2)} m`;
 }
 
 function formatReadingTime(dateTime?: string) {
@@ -56,16 +53,7 @@ export async function getRiverLevelData(): Promise<RiverLevelData> {
     }
 
     const payload = (await response.json()) as EnvironmentAgencyResponse;
-    const latestReading = payload.items?.measures?.find((measure) => {
-      const reading = measure.latestReading;
-      return (
-        reading != null &&
-        typeof reading.value === "number" &&
-        !Number.isNaN(reading.value) &&
-        typeof reading.dateTime === "string" &&
-        reading.dateTime.length > 0
-      );
-    })?.latestReading;
+    const latestReading = payload.items?.[0];
 
     return {
       level: formatRiverLevel(latestReading?.value),
