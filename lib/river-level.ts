@@ -56,7 +56,16 @@ export async function getRiverLevelData(): Promise<RiverLevelData> {
     }
 
     const payload = (await response.json()) as EnvironmentAgencyResponse;
-    const latestReading = payload.items?.measures?.[0]?.latestReading;
+    const latestReading = payload.items?.measures?.find((measure) => {
+      const reading = measure.latestReading;
+      return (
+        reading != null &&
+        typeof reading.value === "number" &&
+        !Number.isNaN(reading.value) &&
+        typeof reading.dateTime === "string" &&
+        reading.dateTime.length > 0
+      );
+    })?.latestReading;
 
     return {
       level: formatRiverLevel(latestReading?.value),
