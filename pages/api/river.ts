@@ -23,7 +23,7 @@ export default async function handler(
 
     const data = await response.json();
 
-    const measure = data.items.measures.find(m => m.parameter === "level");
+    const measure = data.items.measures.find((m: any) => m.parameter === "level");
 
     if (!measure || !measure.latestReading) {
       return res.status(200).json({
