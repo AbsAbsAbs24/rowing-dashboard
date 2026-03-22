@@ -5,10 +5,12 @@ export type RiverLevelData = {
 
 type EnvironmentAgencyResponse = {
   items?: {
-    latestReading?: {
-      value?: number;
-      dateTime?: string;
-    };
+    measures?: Array<{
+      latestReading?: {
+        value?: number;
+        dateTime?: string;
+      };
+    }>;
   };
 };
 
@@ -54,7 +56,7 @@ export async function getRiverLevelData(): Promise<RiverLevelData> {
     }
 
     const payload = (await response.json()) as EnvironmentAgencyResponse;
-    const latestReading = payload.items?.latestReading;
+    const latestReading = payload.items?.measures?.[0]?.latestReading;
 
     return {
       level: formatRiverLevel(latestReading?.value),
