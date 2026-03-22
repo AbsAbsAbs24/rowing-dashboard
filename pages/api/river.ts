@@ -1,18 +1,14 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-export async function GET() {
+export default async function handler(req, res) {
   try {
-    const res = await fetch("https://environment.data.gov.uk/flood-monitoring/id/stations/6169", {
+    const response = await fetch("https://environment.data.gov.uk/flood-monitoring/id/stations/6169", {
       headers: {
         Accept: "application/json",
         "User-Agent": "Mozilla/5.0"
-      },
-      cache: "no-store",
+      }
     });
 
-    if (!res.ok) {
-      return Response.json({
+    if (!response.ok) {
+      return res.status(200).json({
         level: "No data available",
         timestamp: "No recent reading",
         trend: "Unknown",
@@ -20,12 +16,12 @@ export async function GET() {
       });
     }
 
-    const data = await res.json();
+    const data = await response.json();
 
-    const measure = data.items.measures.find((m: any) => m.parameter === "level");
+    const measure = data.items.measures.find(m => m.parameter === "level");
 
     if (!measure || !measure.latestReading) {
-      return Response.json({
+      return res.status(200).json({
         level: "No data available",
         timestamp: "No recent reading",
         trend: "Unknown",
@@ -43,14 +39,14 @@ export async function GET() {
     if (measure.typicalRangeHigh && value > measure.typicalRangeHigh) state = "High";
     if (measure.typicalRangeLow && value < measure.typicalRangeLow) state = "Low";
 
-    return Response.json({
+    return res.status(200).json({
       level,
       timestamp,
       trend: "Unknown",
       state
     });
   } catch (e) {
-    return Response.json({
+    return res.status(200).json({
       level: "No data available",
       timestamp: "No recent reading",
       trend: "Unknown",
